@@ -14,4 +14,5 @@ Contents
 .. toctree::
 
    self
+   models
    services

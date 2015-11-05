@@ -1,9 +1,10 @@
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 import base64
 import uuid
 from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 import requests
 from flask import url_for
+from eveauth.utils import camel_to_snake
 
 
 class InvalidSSORequestError(Exception):
@@ -12,6 +13,9 @@ class InvalidSSORequestError(Exception):
 
 class UnavailableSSOError(Exception):
     pass
+
+
+SSOInfo = namedtuple('SSOInfo', ['character_id', 'character_name', 'character_owner_hash'])
 
 
 class SSO(object):
@@ -124,13 +128,13 @@ class SSO(object):
         Use the token generated earlier to retrieve basic account info
 
         :param token: OAuth token
-        :return: a dict with information about the user
+        :return: :class:`SSOInfo`
         """
         try:
             res = requests.get(self.verify_url, headers={'Authorization':  'Bearer {}'.format(token), 'User-Agent': 'EveAuth/0.0.1'})
             if res.status_code > 500:
                 raise UnavailableSSOError()
-            return res.json()
+            return SSOInfo(**{camel_to_snake(k): v for k, v in res.json().items() if k in ['CharacterID', 'CharacterName', 'CharacterOwnerHash']})
         except Exception as e:
             self.app.logger.exception(e)
             raise e

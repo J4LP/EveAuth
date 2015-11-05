@@ -12,6 +12,7 @@ ma = Marshmallow()
 
 
 class UserStatus(enum.Enum):
+    crest_guest = 'CREST Guest'
     active = 'Active'
     inactive = 'Inactive'
     banned = 'Banned'

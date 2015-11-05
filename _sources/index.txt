@@ -1,7 +1,6 @@
 EveAuth
 =======
 
-Fkk
 EveAuth is a single login solution for your Alliance. Manage your users, groups and applications with a nice and fancy web application.
 
 Contents

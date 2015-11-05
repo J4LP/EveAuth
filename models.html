@@ -1,0 +1,253 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Models &mdash; EveAuth 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="EveAuth 0.1.1 documentation" href="index.html" />
+    <link rel="next" title="Services" href="services.html" />
+    <link rel="prev" title="Welcome to EveAuth’s documentation!" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="models">
+<h1>Models<a class="headerlink" href="#models" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="user">
+<h2>User<a class="headerlink" href="#user" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="eveauth.models.User">
+<em class="property">class </em><code class="descclassname">eveauth.models.</code><code class="descname">User</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/eveauth/models/user.html#User"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#eveauth.models.User" title="Permalink to this definition">¶</a></dt>
+<dd><p>User model</p>
+<dl class="attribute">
+<dt id="eveauth.models.User.crest_character_hash">
+<code class="descname">crest_character_hash</code><a class="headerlink" href="#eveauth.models.User.crest_character_hash" title="Permalink to this definition">¶</a></dt>
+<dd><p>CREST returned character hash</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.User.crest_character_id">
+<code class="descname">crest_character_id</code><a class="headerlink" href="#eveauth.models.User.crest_character_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>CREST returned character id</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.User.crest_character_name">
+<code class="descname">crest_character_name</code><a class="headerlink" href="#eveauth.models.User.crest_character_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>CREST returned character name</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.User.crest_validated">
+<code class="descname">crest_validated</code><a class="headerlink" href="#eveauth.models.User.crest_validated" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the User has been validated through CREST</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.User.crest_validated_on">
+<code class="descname">crest_validated_on</code><a class="headerlink" href="#eveauth.models.User.crest_validated_on" title="Permalink to this definition">¶</a></dt>
+<dd><p>When the user has been validated through CREST</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.User.email">
+<code class="descname">email</code><a class="headerlink" href="#eveauth.models.User.email" title="Permalink to this definition">¶</a></dt>
+<dd><p>User&#8217;s email</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.User.id">
+<code class="descname">id</code><a class="headerlink" href="#eveauth.models.User.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>User UUID</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="eveauth.models.User.is_authenticated">
+<code class="descname">is_authenticated</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/eveauth/models/user.html#User.is_authenticated"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#eveauth.models.User.is_authenticated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the user is authenticated or not.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/library/functions.html#bool" title="(in Python v2.7)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.User.last_ip">
+<code class="descname">last_ip</code><a class="headerlink" href="#eveauth.models.User.last_ip" title="Permalink to this definition">¶</a></dt>
+<dd><p>User&#8217;s last ip used to login</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.User.last_login_on">
+<code class="descname">last_login_on</code><a class="headerlink" href="#eveauth.models.User.last_login_on" title="Permalink to this definition">¶</a></dt>
+<dd><p>User&#8217;s last login date</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="eveauth.models.User.new_crest_guest">
+<em class="property">classmethod </em><code class="descname">new_crest_guest</code><span class="sig-paren">(</span><em>user_info: eveauth.forms.RegisterForm</em>, <em>crest_info: eveauth.services.sso.SSOInfo</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/eveauth/models/user.html#User.new_crest_guest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#eveauth.models.User.new_crest_guest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accept a <code class="xref py py-class docutils literal"><span class="pre">RegisterForm</span></code> and a dict returned by CREST to build a guest user</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>user_info</strong> (<em>RegisterForm</em>) &#8211; a <code class="xref py py-class docutils literal"><span class="pre">RegisterForm</span></code></li>
+<li><strong>crest_info</strong> (<em>SSOInfo</em>) &#8211; CREST info</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.User.password">
+<code class="descname">password</code><a class="headerlink" href="#eveauth.models.User.password" title="Permalink to this definition">¶</a></dt>
+<dd><p>User&#8217;s password, automatically encrypt passwords and provide equality.
+Verifying password is as easy as:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="p">()</span>
+<span class="n">user</span><span class="o">.</span><span class="n">password</span> <span class="o">=</span> <span class="s">&#39;b&#39;</span>
+<span class="c"># &#39;$5$rounds=80000$H.............&#39;</span>
+<span class="n">user</span><span class="o">.</span><span class="n">password</span> <span class="o">==</span> <span class="s">&#39;b&#39;</span>
+<span class="c"># True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.User.status">
+<code class="descname">status</code><a class="headerlink" href="#eveauth.models.User.status" title="Permalink to this definition">¶</a></dt>
+<dd><p>User&#8217;s status from <a class="reference internal" href="#eveauth.models.UserStatus" title="eveauth.models.UserStatus"><code class="xref py py-class docutils literal"><span class="pre">UserStatus</span></code></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.User.user_id">
+<code class="descname">user_id</code><a class="headerlink" href="#eveauth.models.User.user_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>User unique ID accross services</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="userstatus">
+<h2>UserStatus<a class="headerlink" href="#userstatus" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="eveauth.models.UserStatus">
+<em class="property">class </em><code class="descclassname">eveauth.models.</code><code class="descname">UserStatus</code><a class="reference internal" href="_modules/eveauth/models.html#UserStatus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#eveauth.models.UserStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>An enumeration.</p>
+<dl class="attribute">
+<dt id="eveauth.models.UserStatus.active">
+<code class="descname">active</code><em class="property"> = &lt;UserStatus.active: 'Active'&gt;</em><a class="headerlink" href="#eveauth.models.UserStatus.active" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.UserStatus.banned">
+<code class="descname">banned</code><em class="property"> = &lt;UserStatus.banned: 'Banned'&gt;</em><a class="headerlink" href="#eveauth.models.UserStatus.banned" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.UserStatus.crest_guest">
+<code class="descname">crest_guest</code><em class="property"> = &lt;UserStatus.crest_guest: 'CREST Guest'&gt;</em><a class="headerlink" href="#eveauth.models.UserStatus.crest_guest" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.UserStatus.inactive">
+<code class="descname">inactive</code><em class="property"> = &lt;UserStatus.inactive: 'Inactive'&gt;</em><a class="headerlink" href="#eveauth.models.UserStatus.inactive" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="eveauth.models.UserStatus.veteran">
+<code class="descname">veteran</code><em class="property"> = &lt;UserStatus.veteran: 'Veteran'&gt;</em><a class="headerlink" href="#eveauth.models.UserStatus.veteran" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">EveAuth</a></h1>
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=&repo=&type=watch&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+<h3><a href="index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Welcome to EveAuth&#8217;s documentation!</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#user">User</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#userstatus">UserStatus</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="services.html">Services</a></li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, adrien-f.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/models.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

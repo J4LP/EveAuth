@@ -1,0 +1,184 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>eveauth.models.user &mdash; EveAuth 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="EveAuth 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="eveauth.models" href="../models.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for eveauth.models.user</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">import</span> <span class="nn">arrow</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy_utils</span> <span class="kn">import</span> <span class="n">IPAddressType</span><span class="p">,</span> <span class="n">ArrowType</span><span class="p">,</span> <span class="n">UUIDType</span><span class="p">,</span> <span class="n">PasswordType</span><span class="p">,</span> <span class="n">ChoiceType</span>
+<span class="kn">from</span> <span class="nn">flask.ext.restful</span> <span class="kn">import</span> <span class="n">fields</span>
+<span class="kn">from</span> <span class="nn">marshmallow</span> <span class="kn">import</span> <span class="n">post_dump</span>
+<span class="kn">from</span> <span class="nn">eveauth.models</span> <span class="kn">import</span> <span class="n">db</span><span class="p">,</span> <span class="n">ma</span><span class="p">,</span> <span class="n">UserStatus</span>
+<span class="kn">from</span> <span class="nn">eveauth.services.sso</span> <span class="kn">import</span> <span class="n">SSOInfo</span>
+<span class="kn">from</span> <span class="nn">eveauth.forms</span> <span class="kn">import</span> <span class="n">RegisterForm</span>
+
+
+<div class="viewcode-block" id="User"><a class="viewcode-back" href="../../../models.html#eveauth.models.User">[docs]</a><span class="k">class</span> <span class="nc">User</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    User model</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c">#: User UUID</span>
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">UUIDType</span><span class="p">(</span><span class="n">binary</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="c">#: User unique ID accross services</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">String</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="c">#: User&#39;s email</span>
+    <span class="n">email</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">String</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">password</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">PasswordType</span><span class="p">(</span><span class="n">schemes</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;bcrypt&#39;</span><span class="p">]),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    User&#39;s password, automatically encrypt passwords and provide equality.</span>
+<span class="sd">    Verifying password is as easy as::</span>
+
+<span class="sd">        user = User()</span>
+<span class="sd">        user.password = &#39;b&#39;</span>
+<span class="sd">        # &#39;$5$rounds=80000$H.............&#39;</span>
+<span class="sd">        user.password == &#39;b&#39;</span>
+<span class="sd">        # True</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c">#: User&#39;s status from :class:`UserStatus`</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">ChoiceType</span><span class="p">(</span><span class="n">UserStatus</span><span class="p">,</span> <span class="n">impl</span><span class="o">=</span><span class="n">db</span><span class="o">.</span><span class="n">String</span><span class="p">()),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="c">#: If the User has been validated through CREST</span>
+    <span class="n">crest_validated</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Boolean</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="c">#: When the user has been validated through CREST</span>
+    <span class="n">crest_validated_on</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">ArrowType</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="c">#: CREST returned character id</span>
+    <span class="n">crest_character_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Integer</span><span class="p">(),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="c">#: CREST returned character name</span>
+    <span class="n">crest_character_name</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">String</span><span class="p">(),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="c">#: CREST returned character hash</span>
+    <span class="n">crest_character_hash</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">String</span><span class="p">(),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="c">#: User&#39;s last ip used to login</span>
+    <span class="n">last_ip</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">IPAddressType</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">u&#39;127.0.0.1&#39;</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="c">#: User&#39;s last login date</span>
+    <span class="n">last_login_on</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">ArrowType</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">arrow</span><span class="o">.</span><span class="n">utcnow</span><span class="p">(),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">created_on</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">ArrowType</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">arrow</span><span class="o">.</span><span class="n">utcnow</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">updated_on</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">ArrowType</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">arrow</span><span class="o">.</span><span class="n">utcnow</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">anonymous</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">authenticated</span> <span class="o">=</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="User.is_authenticated"><a class="viewcode-back" href="../../../models.html#eveauth.models.User.is_authenticated">[docs]</a>    <span class="k">def</span> <span class="nf">is_authenticated</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns whether the user is authenticated or not.</span>
+
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">authenticated</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="User.new_crest_guest"><a class="viewcode-back" href="../../../models.html#eveauth.models.User.new_crest_guest">[docs]</a>    <span class="k">def</span> <span class="nf">new_crest_guest</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">user_info</span><span class="p">:</span> <span class="n">RegisterForm</span><span class="p">,</span> <span class="n">crest_info</span><span class="p">:</span> <span class="n">SSOInfo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accept a :class:`RegisterForm` and a dict returned by CREST to build a guest user</span>
+
+<span class="sd">        :param RegisterForm user_info: a :class:`RegisterForm`</span>
+<span class="sd">        :param SSOInfo crest_info: CREST info</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">User</span><span class="p">(</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">crest_info</span><span class="o">.</span><span class="n">character_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">,</span> <span class="s">&#39;_&#39;</span><span class="p">),</span>
+            <span class="n">email</span><span class="o">=</span><span class="n">user_info</span><span class="o">.</span><span class="n">email</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">password</span><span class="o">=</span><span class="n">user_info</span><span class="o">.</span><span class="n">password</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">status</span><span class="o">=</span><span class="n">UserStatus</span><span class="o">.</span><span class="n">crest_guest</span><span class="p">,</span>
+            <span class="n">crest_validated</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">crest_validated_on</span><span class="o">=</span><span class="n">arrow</span><span class="o">.</span><span class="n">utcnow</span><span class="p">(),</span>
+            <span class="n">crest_character_id</span><span class="o">=</span><span class="n">crest_info</span><span class="o">.</span><span class="n">character_id</span><span class="p">,</span>
+            <span class="n">crest_character_name</span><span class="o">=</span><span class="n">crest_info</span><span class="o">.</span><span class="n">character_name</span><span class="p">,</span>
+            <span class="n">crest_character_hash</span><span class="o">=</span><span class="n">crest_info</span><span class="o">.</span><span class="n">character_owner_hash</span>
+        <span class="p">)</span>
+</div>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="n">user_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">User</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">filter_by</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+
+
+</div>
+<span class="k">class</span> <span class="nc">UserSchema</span><span class="p">(</span><span class="n">ma</span><span class="o">.</span><span class="n">ModelSchema</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">User</span>
+        <span class="n">exclude</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;password&#39;</span><span class="p">,)</span>
+
+    <span class="nd">@post_dump</span><span class="p">(</span><span class="n">pass_many</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">add_envelope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">many</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">many</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s">&#39;items&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">data</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">EveAuth</a></h1>
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=&repo=&type=watch&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+<h3><a href="../../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Welcome to EveAuth&#8217;s documentation!</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../services.html">Services</a></li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, adrien-f.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>eveauth.services.sso &mdash; EveAuth 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="EveAuth 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for eveauth.services.sso</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">namedtuple</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="kn">import</span> <span class="n">urlparse</span><span class="p">,</span> <span class="n">parse_qsl</span><span class="p">,</span> <span class="n">urlencode</span><span class="p">,</span> <span class="n">urlunparse</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">url_for</span>
+<span class="kn">from</span> <span class="nn">eveauth.utils</span> <span class="kn">import</span> <span class="n">camel_to_snake</span>
+
+
+<span class="k">class</span> <span class="nc">InvalidSSORequestError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">UnavailableSSOError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="n">SSOInfo</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s">&#39;SSOInfo&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;character_id&#39;</span><span class="p">,</span> <span class="s">&#39;character_name&#39;</span><span class="p">,</span> <span class="s">&#39;character_owner_hash&#39;</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="SSO"><a class="viewcode-back" href="../../../services.html#eveauth.services.SSO">[docs]</a><span class="k">class</span> <span class="nc">SSO</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Eve SSO service.</span>
+
+<span class="sd">    It can generate SSO URLs, validate OAUTH tokens and make basic CREST requests.</span>
+
+<span class="sd">    Register your application `here &lt;https://developers.eveonline.com/applications&gt;`_.</span>
+
+<span class="sd">    Configuration:</span>
+
+<span class="sd">    +---------------+-----------------------------------------------------------------+</span>
+<span class="sd">    | secret_key    | (Required) The app secret key                                   |</span>
+<span class="sd">    +---------------+-----------------------------------------------------------------+</span>
+<span class="sd">    | client_id     | (Required) The app client id                                    |</span>
+<span class="sd">    +---------------+-----------------------------------------------------------------+</span>
+<span class="sd">    | redirect_url  | (Required) The flask endpoint used for redirection              |</span>
+<span class="sd">    +---------------+-----------------------------------------------------------------+</span>
+<span class="sd">    | authorize_url | (Optional) The auth URL for SSO (could be used to test on SISI) |</span>
+<span class="sd">    +---------------+-----------------------------------------------------------------+</span>
+<span class="sd">    | token_url     | (Optional) The token URL for SSO                                |</span>
+<span class="sd">    +---------------+-----------------------------------------------------------------+</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">app</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">secret_key</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">client_id</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">redirect_url</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">authorize_url</span> <span class="o">=</span> <span class="s">&#39;https://login.eveonline.com/oauth/authorize&#39;</span>
+    <span class="n">token_url</span> <span class="o">=</span> <span class="s">&#39;https://login.eveonline.com/oauth/token&#39;</span>
+    <span class="n">verify_url</span> <span class="o">=</span> <span class="s">&#39;https://login.eveonline.com/oauth/verify&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">app</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">init_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">app</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;SSO&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;Missing SSO configuration !&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;SSO&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;secret_key&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;Missing SSO secret key !&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;SSO&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;client_id&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;Missing SSO client id !&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;SSO&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;redirect_url&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&#39;Missing SSO redirect url !&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">secret_key</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;SSO&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;secret_key&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;SSO&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;client_id&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redirect_url</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;SSO&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;redirect_url&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;SSO&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;authorize_url&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">authorize_url</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;SSO&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;authorize_url&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;SSO&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;token_url&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">token_url</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;SSO&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;token_url&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;SSO&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;verify_url&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">verify_url</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;SSO&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;token_url&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_make_basic_auth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate the Authorization header for SSO</span>
+
+<span class="sd">        b64encode only takes in bytes and format will pollute the final string with b&#39;xxx&#39;</span>
+
+<span class="sd">        :return: An Authorization header, ready to use in requests</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s">&#39;Basic {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="nb">bytearray</span><span class="p">(</span><span class="s">&#39;{}:{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_key</span><span class="p">),</span> <span class="s">&#39;utf-8&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">))</span>
+
+<div class="viewcode-block" id="SSO.make_sso_url"><a class="viewcode-back" href="../../../services.html#eveauth.services.SSO.make_sso_url">[docs]</a>    <span class="k">def</span> <span class="nf">make_sso_url</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the url to redirect the user to with a state parameter to store in session and verify</span>
+
+<span class="sd">        :return: (url, state)  A tuple with the url and the state</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;response_type&#39;</span><span class="p">:</span> <span class="s">&#39;code&#39;</span><span class="p">,</span>
+            <span class="s">&#39;redirect_uri&#39;</span><span class="p">:</span> <span class="n">url_for</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">redirect_url</span><span class="p">,</span> <span class="n">_external</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+            <span class="s">&#39;client_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span><span class="p">,</span>
+            <span class="s">&#39;scope&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+            <span class="s">&#39;state&#39;</span><span class="p">:</span> <span class="n">state</span>
+        <span class="p">}</span>
+        <span class="n">url_parts</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">urlparse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">authorize_url</span><span class="p">))</span>
+        <span class="n">url_parts</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">urlencode</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">urlunparse</span><span class="p">(</span><span class="n">url_parts</span><span class="p">),</span> <span class="n">state</span>
+</div>
+<div class="viewcode-block" id="SSO.verify_code"><a class="viewcode-back" href="../../../services.html#eveauth.services.SSO.verify_code">[docs]</a>    <span class="k">def</span> <span class="nf">verify_code</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Verify the authorization code and retrieve an access token.</span>
+
+<span class="sd">        :param code: code returned from SSO</span>
+<span class="sd">        :return: an access token or exceptions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">token_url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">({</span><span class="s">&#39;grant_type&#39;</span><span class="p">:</span> <span class="s">&#39;authorization_code&#39;</span><span class="p">,</span> <span class="s">&#39;code&#39;</span><span class="p">:</span> <span class="n">code</span><span class="p">}),</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;Authorization&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_basic_auth</span><span class="p">(),</span> <span class="s">&#39;User-Agent&#39;</span><span class="p">:</span> <span class="s">&#39;EveAuth/0.0.1&#39;</span><span class="p">})</span>
+            <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">status_code</span> <span class="o">&gt;</span> <span class="mi">500</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">UnavailableSSOError</span><span class="p">()</span>
+            <span class="n">res_json</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s">&#39;error&#39;</span> <span class="ow">in</span> <span class="n">res_json</span><span class="p">:</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="n">res_json</span><span class="p">[</span><span class="s">&#39;error&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">error</span> <span class="ow">is</span> <span class="s">&#39;invalid_request&#39;</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">InvalidSSORequestError</span><span class="p">(</span><span class="n">res_json</span><span class="p">[</span><span class="s">&#39;error_description&#39;</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">res_json</span><span class="p">[</span><span class="s">&#39;access_token&#39;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span>
+</div>
+<div class="viewcode-block" id="SSO.verify_account"><a class="viewcode-back" href="../../../services.html#eveauth.services.SSO.verify_account">[docs]</a>    <span class="k">def</span> <span class="nf">verify_account</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Use the token generated earlier to retrieve basic account info</span>
+
+<span class="sd">        :param token: OAuth token</span>
+<span class="sd">        :return: :class:`SSOInfo`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verify_url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;Authorization&#39;</span><span class="p">:</span>  <span class="s">&#39;Bearer {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">token</span><span class="p">),</span> <span class="s">&#39;User-Agent&#39;</span><span class="p">:</span> <span class="s">&#39;EveAuth/0.0.1&#39;</span><span class="p">})</span>
+            <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">status_code</span> <span class="o">&gt;</span> <span class="mi">500</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">UnavailableSSOError</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">SSOInfo</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">camel_to_snake</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;CharacterID&#39;</span><span class="p">,</span> <span class="s">&#39;CharacterName&#39;</span><span class="p">,</span> <span class="s">&#39;CharacterOwnerHash&#39;</span><span class="p">]})</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">EveAuth</a></h1>
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=&repo=&type=watch&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+<h3><a href="../../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Welcome to EveAuth&#8217;s documentation!</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../services.html">Services</a></li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, adrien-f.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}{% endblock %}</title>
+{#    <meta name="csrf-token" content="{{ csrf_token() }}">#}
+    {% block js %}
+        <script type="text/javascript" src="{{ url_for('static', filename='scripts/libs.min.js') }}"></script>
+    {% endblock %}
+
+    {% block css %}
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+        <link href="//fonts.googleapis.com/css?family=Open Sans:400,300,700" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="https://cdn.rawgit.com/twbs/bootstrap/v4-dev/dist/css/bootstrap.css">
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles/style.css')}}">
+    {% endblock %}
+</head>
+<body>
+    {% block body %}
+        {% include "_layouts/nav.html" %}
+        <div class="container-fluid">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="container-fluid messages-container {% if no_margin %}messages-margin{% endif %}" id="alerts-container">
+                    <div class="row">
+                        <div class="col-md-12">
+                            {% for category, message in messages %}
+                            {% if category == 'message' %}
+                                <div class="alert alert-info">
+                            {% else %}
+                                <div class="alert alert-{{ category }}">
+                            {% endif %}
+                                <a class="close" title="Close" href="#" data-dismiss="alert">&times;</a>
+                                {{message}}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </div>
+    {% endblock %}
+    <script>
+        /*var csrftoken = $('meta[name=csrf-token]').attr('content')
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken)
+                }
+            }
+        })*/
+    </script>
+</body>
+</html>

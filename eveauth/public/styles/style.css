@@ -1,0 +1,9 @@
+nav.navbar {
+  border-radius: 0;
+  margin-bottom: 20px;
+}
+
+.img-circle {
+  border-radius: 100%;
+  box-shadow: 1px 1px 1px 0px #333;
+}

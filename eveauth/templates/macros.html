@@ -1,0 +1,97 @@
+{% macro render_field(field, label_visible=true, horizontal=False, label_class='col-sm-3', input_class='col-sm-9') -%}
+    <fieldset class="form-group {% if field.errors %}has-error{% endif %} {{ kwargs.pop('class_', '') }} row">
+        {% if (field.type != 'HiddenField' or field.type !='CSRFTokenField') and label_visible %}
+            {% if horizontal %}
+                <label class="{{ label_class }} form-control-label" for="{{ field.label.field_id }}">{{ field.label.text }}</label>
+            {% else %}
+                <label for="{{ field.label.field_id }}" class="control-label">{{ field.label.text }}</label>
+            {% endif %}
+        {% endif %}
+        {% if horizontal %}
+        <div class="{{ input_class }}">
+        {% endif %}
+        {% if kwargs.get('addon') or field.description.get('icon') %}
+            <div class="input-group">
+                {% if kwargs.get('addon') %}
+                    <span class="input-group-addon">{{ kwargs.get('addon')|safe }}</span>
+                {% elif field.description.get('icon') %}
+                    <span class="input-group-addon"><i class="fa fa-fw {{ field.description.get('icon')}}"></i></span>
+                {% endif %}
+        {% endif %}
+        {{ field(class_='form-control', placeholder=field.description.get('placeholder'), **kwargs) }}
+        {% if kwargs.get('addon')  or field.description.get('icon') %}
+            </div>
+        {% endif %}
+        {% if field.errors %}
+            {% for e in field.errors %}
+                <p class="help-block">{{ e }}</p>
+            {% endfor %}
+        {% endif %}
+        {% if field.description %}
+            {% for help in field.description.get('help', []) %}
+                <small class="text-muted">{{ help|safe }}</small>
+            {% endfor %}
+        {% endif %}
+        {% if horizontal %}
+        </div>
+        {% endif %}
+    </fieldset>
+{%- endmacro %}
+
+{% macro render_checkbox_field(field, horizontal=False) -%}
+    <fieldset class="form-group row">
+        {% if horizontal %}
+        <div class="col-sm-offset-3 col-sm-9">
+        {% endif %}
+            <div class="checkbox">
+                <label>
+                    {{ field(type='checkbox', **kwargs) }} {{ field.label.text }}
+                </label>
+            </div>
+        {% if horizontal %}
+        </div>
+        {% endif %}
+    </fieldset>
+
+{%- endmacro %}
+
+{% macro render_radio_field(field) -%}
+    {% for value, label, _ in field.iter_choices() %}
+        <div class="radio">
+            <label>
+                <input type="radio" name="{{ field.id }}" id="{{ field.id }}" value="{{ value }}">{{ label }}
+            </label>
+        </div>
+    {% endfor %}
+{%- endmacro %}
+
+{% macro render_form(form, action_url='', action_text=None, class_='', btn_class='btn btn-default') -%}
+    <form method="POST" action="{{ action_url }}" role="form" class="{{ class_ }}">
+        {{ form.hidden_tag() if form.hidden_tag }}
+        {% if caller %}
+            {{ caller()|safe }}
+        {% else %}
+            {% for f in form %}
+                {% if f.type == 'BooleanField' %}
+                    {{ render_checkbox_field(f, horizontal='form-horizontal' in class_) }}
+                {% elif f.type == 'RadioField' %}
+                    {{ render_radio_field(f, horizontal='form-horizontal' in class_) }}
+                {% elif f.type == 'CSRFTokenField' %}
+                {% else %}
+                    {{ render_field(f, horizontal='form-horizontal' in class_) }}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+        {% if action_text %}
+            {% if 'form-horizontal' in class_ %}
+                <fieldset class="form-group row">
+                    <div class="col-sm-9 col-sm-offset-3">
+                        <button type="submit" class="{{ btn_class }}">{{ action_text|safe }} </button>
+                    </div>
+                </fieldset>
+            {% else %}
+                <button type="submit" name="{{ form._prefix }}submit" class="{{ btn_class }}">{{ action_text|safe }} </button>
+            {% endif %}
+        {% endif %}
+    </form>
+{%- endmacro %}

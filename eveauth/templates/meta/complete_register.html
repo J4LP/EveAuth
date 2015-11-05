@@ -1,0 +1,21 @@
+{% extends "_layouts/base.html" %}
+{% from 'macros.html' import render_form %}
+{% block title %}Register | {{ config.AUTH_NAME }}{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6 col-md-offset-3 text-center">
+    <h1><img src="https://j4lp.com/auth/public/img/logo.png" alt="" height="100px" /> {{ config.EVE.ticker }}</h1>
+    <hr />
+    <h2>Registration</h2>
+    <hr />
+  </div>
+  <div class="col-md-6 col-md-offset-3 text-center m-b">
+    <h2><img src="https://image.eveonline.com/Character/{{ session.sso_data.CharacterID }}_128.jpg" alt="" class="img-responsive img-circle m-r-md" style="display: inline"> Hello <span class="text-success">{{ session.sso_data.CharacterName }}</span>!</h2>
+  </div>
+<div class="col-md-6 col-md-offset-3 card bg-faded p-a-md">
+  <p>We need a few more things to register your account:</p>
+  {{render_form(form, class_='form-horizontal', action_text='<i class="fa fa-fw fa-sign-in"></i> Register', btn_class='btn btn-block btn-success', action_url=url_for('MetaView:register_cb'))}}
+</div>
+</div>
+{% endblock %}

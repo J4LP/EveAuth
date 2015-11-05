@@ -1,0 +1,15 @@
+{% extends "_layouts/base.html" %}
+
+{% block title %}{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-6 col-md-offset-3 text-center">
+      <div class="jumbotron">
+        <h1>{{ config.AUTH_NAME }}</h1>
+        <a href="{{ url_for('MetaView:index') }}" class="btn btn-primary"><i class="fa fa-fw fa-sign-in"></i> Login</a>
+        <a href="{{ url_for('MetaView:register') }}" class="btn btn-info"><i class="fa fa-fw fa-user-plus"></i> Register</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

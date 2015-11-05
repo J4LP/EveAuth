@@ -1,0 +1,18 @@
+{% extends "_layouts/base.html" %}
+{% from 'macros.html' import render_form %}
+{% block title %}Login | Présence{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <h1><i class="fa fa-fw fa-sign-in"></i> Login</h1>
+    <hr>
+    <div class="card card-inverse bg-faded">
+      <div class="card-block clearfix">
+        {{render_form(form, class_='form-horizontal', action_text='<i class="fa fa-fw fa-sign-in"></i> Login', btn_class='btn btn-block btn-success', action_url=url_for('MetaView:do_login'))}}
+        <a href="#" class="pull-right">Un problème de connexion ?</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

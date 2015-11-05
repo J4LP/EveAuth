@@ -1,0 +1,10 @@
+# Host variable for generating external URLs
+HOST: 127.0.0.1:5000
+# Name for your auth, short is prefered
+AUTH_NAME: J4LP
+# Get your application keys here: https://developers.eveonline.com/applications/create
+SSO:
+  secret_key: OmkE99Yfx9CQYMWLh0hr95Cj0hsNTA3zLZ5s1VTE
+  client_id: a02538651b0b4f188a1392f42a577b5f
+  # You should not have to touch this
+  redirect_url: MetaView:register_cb

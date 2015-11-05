@@ -12,7 +12,7 @@ def create_app(config_file=None, config_object=None):
     """
     app = Flask(__name__, static_folder='public')
     app.config.from_object('eveauth.settings.BaseConfig')
-    app.environment = os.getenv('eveauth_ENV', 'dev')
+    app.environment = os.getenv('EVEAUTH_ENV', 'dev')
 
     if config_file:
         file_ext = os.path.splitext(config_file)[1]

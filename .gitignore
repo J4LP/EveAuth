@@ -63,6 +63,7 @@ target/
 .idea/
 docs/buid
 .env
-migrations/versions
+migrations/versions/*
+!migrations/version/.gitkeep
 *.sqlite
 settings.yml
